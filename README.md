@@ -19,7 +19,7 @@ Install:
 ```bash
 python3 -m venv env
 source env/bin/activate
-pip install lief
+pip install -r requirements.txt
 ```
 
 ### Local (macOS)
@@ -33,7 +33,7 @@ Install:
 ```bash
 python3 -m venv env
 source env/bin/activate
-pip install lief
+pip install -r requirements.txt
 
 brew install ldid  # optional
 ```
@@ -52,7 +52,7 @@ To forward a Gadget TCP port over USB you typically use `iproxy` (libimobiledevi
 Basic injection using a custom frida gadget version on jailed iOS:
 
 ```bash
-python scripts/inject_frida_gadget.py \
+python inject_frida_dylib.py \
   -i DVIA-v2.ipa \
   -g 17.7.1 \
   --generate-config resume \
@@ -62,7 +62,7 @@ python scripts/inject_frida_gadget.py \
 
 ### Script Arguments
 
-`scripts/inject_frida_gadget.py` supports the following options:
+`inject_frida_dylib.py` supports the following options:
 
 | Option | Required | Meaning |
 |---|---:|---|
@@ -106,13 +106,14 @@ These two flags are unrelated and affect different things:
 
 - `code_signing: required` is a **Frida Gadget mode** used for jailed iOS compatibility.
 - This mode restricts Interceptor API for iOS
+- On jailed iOS with `code_signing: required`, many Objection features may not work.
 
 ### Avoid Port Conflicts (Multiple Gadget Apps)
 
 If you have more than one app with Gadget installed, use a unique port per app:
 
 ```bash
-python scripts/inject_frida_gadget.py \
+python inject_frida_dylib.py \
   -i DVIA-v2.ipa \
   -g frida-gadget-17.7.1-ios-universal.dylib \
   --generate-config resume \
@@ -126,7 +127,7 @@ python scripts/inject_frida_gadget.py \
 Downloads latest Frida Gadget from the official `frida/frida` GitHub releases:
 
 ```bash
-python scripts/inject_frida_gadget.py \
+python inject_frida_dylib.py \
   -i DVIA-v2.ipa \
   -g latest \
   --generate-config resume \
@@ -137,7 +138,7 @@ python scripts/inject_frida_gadget.py \
 Or a specific version:
 
 ```bash
-python scripts/inject_frida_gadget.py \
+python inject_frida_dylib.py \
   -i DVIA-v2.ipa \
   -g 17.6.2 \
   --generate-config resume \
@@ -148,7 +149,7 @@ python scripts/inject_frida_gadget.py \
 Or use local 
 
 ```bash
-python scripts/inject_frida_gadget.py \
+python inject_frida_dylib.py \
   -i DVIA-v2.ipa \
   -g frida-gadget-17.7.1-ios-universal.dylib \
   --generate-config resume \
@@ -182,10 +183,6 @@ Objection attaches to the Gadget endpoint using `-n Gadget` and network mode:
 objection -N -h 127.0.0.1 -P 27044 -n Gadget start
 ```
 
-If Objection times out:
-
-- Make sure your **host Frida version matches the injected Gadget version**
-
 ### Verify Frida is Working
 
 When connected, verify the main module path:
@@ -206,22 +203,6 @@ You should see the app’s executable (example: `DVIA-v2`) and a path like:
 
 `/private/var/containers/Bundle/Application/<UUID>/...app/<Executable>`
 
-
-### Version Matching
-
-Check host versions:
-
-```bash
-frida --version
-pipx runpip objection show frida
-```
-
-If you injected gadget `17.7.1`, align the host tools:
-
-```bash
-python3 -m pip install -U --user frida==17.7.1 frida-tools
-pipx runpip objection install -U frida==17.7.1
-```
 
 ## Troubleshooting
 

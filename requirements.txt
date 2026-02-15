@@ -1,0 +1,2 @@
+# Runtime dependency for inject_frida_dylib.py
+lief==0.17.3

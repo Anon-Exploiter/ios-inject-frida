@@ -80,7 +80,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install --upgrade pip
-          python -m pip install --only-binary=:all: "lief==0.17.3"
+          python -m pip install --only-binary=:all: -r requirements.txt
 
       - name: Patch IPA
         shell: bash
@@ -119,7 +119,7 @@ jobs:
           # Ubuntu runner: do not attempt ldid signing.
           args+=( --no-sign )
 
-          python scripts/inject_frida_gadget.py "${args[@]}"
+          python inject_frida_dylib.py "${args[@]}"
 
           test -f "${{ inputs.output_ipa }}"
 
