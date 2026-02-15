@@ -9,6 +9,10 @@ This script helps with injecting **Frida Gadget** into an iOS `.ipa` file:
 
 It does **not** require macOS. You can run it on Linux/WSL (and the included GitHub Actions workflow uses `ubuntu-latest`).
 
+## Screenshot
+
+![Example script run](https://i.imgur.com/25vdYFc.png)
+
 ## Prerequisites
 
 ### Local (Linux / WSL)
