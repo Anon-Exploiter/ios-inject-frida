@@ -3,15 +3,10 @@ name: Patch IPA with Frida Gadget
 on:
   workflow_dispatch:
     inputs:
-      ipa_path:
-        description: "Path to IPA in repo (used if ipa_url is empty)"
-        required: true
-        default: "DVIA-v2.ipa"
-        type: string
       ipa_url:
-        description: "Optional: URL to IPA (if set, overrides ipa_path)"
-        required: false
-        default: ""
+        description: "URL to IPA to patch (direct download link)"
+        required: true
+        default: "https://github.com/prateek147/DVIA-v2/releases/download/v2.0/DVIA-v2-swift.ipa"
         type: string
       gadget:
         description: "Gadget source: local path in repo, URL, 'latest', or 'X.Y.Z'"
@@ -24,36 +19,36 @@ on:
         default: "patched-with-frida.ipa"
         type: string
       generate_config:
-        description: "Generate Gadget config (leave empty to skip)"
-        required: false
+        description: "Generate Gadget config"
+        required: true
         default: "resume"
         type: choice
         options:
           - "resume"
           - "wait"
-          - ""
+          - "none"
       code_signing:
-        description: "Only used if generate_config is set (leave empty to omit)"
-        required: false
+        description: "Only used if generate_config is not 'none'"
+        required: true
         default: "required"
         type: choice
         options:
           - "required"
           - "optional"
-          - ""
+          - "omit"
       listen_port:
-        description: "Only used if generate_config is set"
-        required: true
+        description: "Only used if generate_config is not 'none'"
+        required: false
         default: "27044"
         type: string
       listen_address:
-        description: "Only used if generate_config is set"
-        required: true
+        description: "Only used if generate_config is not 'none'"
+        required: false
         default: "127.0.0.1"
         type: string
       on_port_conflict:
-        description: "Only used if generate_config is set"
-        required: true
+        description: "Only used if generate_config is not 'none'"
+        required: false
         default: "fail"
         type: choice
         options:
@@ -89,29 +84,25 @@ jobs:
         run: |
           set -euo pipefail
 
-          IPA_INPUT=""
-          if [[ -n "${{ inputs.ipa_url }}" ]]; then
-            curl -fsSL -L "${{ inputs.ipa_url }}" -o input.ipa
-            IPA_INPUT="input.ipa"
-          else
-            if [[ ! -f "${{ inputs.ipa_path }}" ]]; then
-              echo "::error::IPA not found: ${{ inputs.ipa_path }}"
-              exit 1
-            fi
-            IPA_INPUT="${{ inputs.ipa_path }}"
+          if [[ -z "${{ inputs.ipa_url }}" ]]; then
+            echo "::error::ipa_url is required"
+            exit 1
           fi
+
+          curl -fsSL -L "${{ inputs.ipa_url }}" -o input.ipa
+          IPA_INPUT="input.ipa"
 
           GADGET_ARG="${{ inputs.gadget }}"
 
           args=( -i "$IPA_INPUT" -g "$GADGET_ARG" -o "${{ inputs.output_ipa }}" )
 
-          if [[ -n "${{ inputs.generate_config }}" ]]; then
+          if [[ "${{ inputs.generate_config }}" != "none" ]]; then
             args+=( --generate-config "${{ inputs.generate_config }}" )
             args+=( --listen-address "${{ inputs.listen_address }}" )
             args+=( --listen-port "${{ inputs.listen_port }}" )
             args+=( --on-port-conflict "${{ inputs.on_port_conflict }}" )
 
-            if [[ -n "${{ inputs.code_signing }}" ]]; then
+            if [[ "${{ inputs.code_signing }}" != "omit" ]]; then
               args+=( --code-signing "${{ inputs.code_signing }}" )
             fi
           fi

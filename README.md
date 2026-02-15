@@ -230,7 +230,7 @@ You can fork this repo and run GitHub Actions to produce a patched IPA automatic
 1. Fork the repo
 2. Go to the **Actions** tab in your fork
 3. Run the workflow **Patch IPA with Frida Gadget**
-4. It requires the URL to IPA and some other options to be set as we do with the script itself
-5. You can try with the DVIA IPA: https://github.com/prateek147/DVIA-v2/releases/download/v2.0/DVIA-v2-swift.ipa
+4. Set `ipa_url` (direct download link to the IPA), plus the other options
+5. Example `ipa_url` for DVIA: https://github.com/prateek147/DVIA-v2/releases/download/v2.0/DVIA-v2-swift.ipa
 6. When the run finishes, it creates a **draft GitHub Release** containing the output IPA
 7. You can download that IPA and install it within your jailed device
