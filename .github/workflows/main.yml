@@ -1,0 +1,132 @@
+name: Patch IPA with Frida Gadget
+
+on:
+  workflow_dispatch:
+    inputs:
+      ipa_path:
+        description: "Path to IPA in repo (used if ipa_url is empty)"
+        required: true
+        default: "DVIA-v2.ipa"
+        type: string
+      ipa_url:
+        description: "Optional: URL to IPA (if set, overrides ipa_path)"
+        required: false
+        default: ""
+        type: string
+      gadget:
+        description: "Gadget source: local path in repo, URL, 'latest', or 'X.Y.Z'"
+        required: true
+        default: "latest"
+        type: string
+      output_ipa:
+        description: "Output IPA filename"
+        required: true
+        default: "patched-with-frida.ipa"
+        type: string
+      generate_config:
+        description: "Generate Gadget config (leave empty to skip)"
+        required: false
+        default: "resume"
+        type: choice
+        options:
+          - "resume"
+          - "wait"
+          - ""
+      code_signing:
+        description: "Only used if generate_config is set (leave empty to omit)"
+        required: false
+        default: "required"
+        type: choice
+        options:
+          - "required"
+          - "optional"
+          - ""
+      listen_port:
+        description: "Only used if generate_config is set"
+        required: true
+        default: "27044"
+        type: string
+      listen_address:
+        description: "Only used if generate_config is set"
+        required: true
+        default: "127.0.0.1"
+        type: string
+      on_port_conflict:
+        description: "Only used if generate_config is set"
+        required: true
+        default: "fail"
+        type: choice
+        options:
+          - "fail"
+          - "pick"
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install --only-binary=:all: "lief==0.17.3"
+
+      - name: Patch IPA
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          IPA_INPUT=""
+          if [[ -n "${{ inputs.ipa_url }}" ]]; then
+            curl -fsSL -L "${{ inputs.ipa_url }}" -o input.ipa
+            IPA_INPUT="input.ipa"
+          else
+            if [[ ! -f "${{ inputs.ipa_path }}" ]]; then
+              echo "::error::IPA not found: ${{ inputs.ipa_path }}"
+              exit 1
+            fi
+            IPA_INPUT="${{ inputs.ipa_path }}"
+          fi
+
+          GADGET_ARG="${{ inputs.gadget }}"
+
+          args=( -i "$IPA_INPUT" -g "$GADGET_ARG" -o "${{ inputs.output_ipa }}" )
+
+          if [[ -n "${{ inputs.generate_config }}" ]]; then
+            args+=( --generate-config "${{ inputs.generate_config }}" )
+            args+=( --listen-address "${{ inputs.listen_address }}" )
+            args+=( --listen-port "${{ inputs.listen_port }}" )
+            args+=( --on-port-conflict "${{ inputs.on_port_conflict }}" )
+
+            if [[ -n "${{ inputs.code_signing }}" ]]; then
+              args+=( --code-signing "${{ inputs.code_signing }}" )
+            fi
+          fi
+
+          # Ubuntu runner: do not attempt ldid signing.
+          args+=( --no-sign )
+
+          python scripts/inject_frida_gadget.py "${args[@]}"
+
+          test -f "${{ inputs.output_ipa }}"
+
+      - name: Create GitHub Release (draft)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: frida-patched-${{ github.run_id }}
+          name: Frida patched IPA (${{ github.run_number }})
+          draft: true
+          files: ${{ inputs.output_ipa }}
