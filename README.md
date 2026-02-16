@@ -170,7 +170,7 @@ python inject_frida_dylib.py \
 1. Forward the Gadget port:
 
 ```bash
-iproxy 27044 27044
+.\iproxy.exe 27042 27042
 ```
 
 2. Launch the app on the iPhone.
@@ -178,7 +178,8 @@ iproxy 27044 27044
 3. Attach using Frida:
 
 ```bash
-frida -H 127.0.0.1:27044 -n Gadget
+frida-ps -H 127.0.0.1:27042 -a
+frida -H 127.0.0.1:27042 -n Gadget
 ```
 
 ### Objection (Gadget Endpoint)
@@ -186,7 +187,7 @@ frida -H 127.0.0.1:27044 -n Gadget
 Objection attaches to the Gadget endpoint using `-n Gadget` and network mode:
 
 ```bash
-objection -N -h 127.0.0.1 -P 27044 -n Gadget start
+objection -N -h 127.0.0.1 -P 27042 -n Gadget start
 ```
 
 ### Verify Frida is Working
